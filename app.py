@@ -66,23 +66,15 @@ st.markdown(
         background: linear-gradient(135deg, #0b6bff, #00c6ff);
         color: #ffffff;
     }
-    .glow-button.blue:hover {
-        box-shadow: 0 0 20px rgba(0, 198, 255, 1);
-        transform: translateY(-1px);
-    }
     .glow-button.red {
         background: linear-gradient(135deg, #ff1744, #ff5252);
         color: #ffffff;
         box-shadow: 0 0 16px rgba(255, 23, 68, 0.9);
     }
-    .glow-button.red:hover {
-        box-shadow: 0 0 24px rgba(255, 82, 82, 1);
-        transform: translateY(-1px);
-    }
     .section-card {
         background: radial-gradient(circle at top left, rgba(0, 153, 255, 0.12), rgba(0,0,0,0.9));
         border-radius: 18px;
-        padding: 18px 18px 14px 18px;
+        padding: 18px;
         border: 1px solid rgba(0, 153, 255, 0.25);
         box-shadow: 0 0 24px rgba(0, 153, 255, 0.25);
         margin-bottom: 18px;
@@ -100,38 +92,17 @@ st.markdown(
         border-top: 1px solid rgba(255, 0, 0, 0.5);
         z-index: 9999;
     }
-    .warning-footer strong {
-        color: #ffb3b3;
-    }
-    .map-block {
-        margin-top: 8px;
-        padding: 10px 12px;
-        border-radius: 12px;
-        background: rgba(0, 0, 0, 0.55);
-        border: 1px solid rgba(0, 153, 255, 0.3);
-        font-size: 0.85rem;
-    }
-    .tel-link {
-        color: #7dd3fc;
-        text-decoration: none;
-    }
-    .tel-link:hover {
-        text-decoration: underline;
-        color: #e0f2fe;
-    }
     .chat-bubble-user {
         background: rgba(0, 153, 255, 0.2);
         padding: 8px 10px;
         border-radius: 10px;
         margin-bottom: 4px;
-        font-size: 0.9rem;
     }
     .chat-bubble-ai {
         background: rgba(0, 255, 153, 0.12);
         padding: 8px 10px;
         border-radius: 10px;
         margin-bottom: 8px;
-        font-size: 0.9rem;
         border: 1px solid rgba(0, 255, 153, 0.3);
     }
     </style>
@@ -166,194 +137,105 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    "<h3>ACİL DURUM · YAPAY ZEKA SOHBET · KONUM TABANLI HASTANE & ECZANE</h3>",
-    unsafe_allow_html=True,
-)
-
-# ------------------ ACİL DURUM BÖLÜMÜ ------------------ #
+# ------------------ ACİL DURUM ------------------ #
 with st.container():
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("### 🚨 Acil Durum")
-    st.write(
-        "Hayati risk, göğüs ağrısı, nefes darlığı, bilinç kaybı, ağır travma gibi durumlarda "
-        "**beklemeden 112 Acil Çağrı Merkezi’ni arayın.**"
-    )
-    col_a1, col_a2 = st.columns(2)
-    with col_a1:
-        if st.button("📞 112’yi Ara", type="primary"):
-            st.markdown("[Telefonla 112’yi ara](tel:112)", unsafe_allow_html=True)
-            st.info("Telefonunuzdan 112’yi arayabilirsiniz.")
-    with col_a2:
-        st.write("Konumunuza göre en yakın acil servis için aşağıdaki harita bölümünü kullanın.")
+    st.write("Hayati risk durumunda **112’yi arayın**.")
+    if st.button("📞 112’yi Ara"):
+        st.markdown("[Telefonla 112’yi ara](tel:112)", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------ YAPAY ZEKA SOHBET (GEMINI ENTEGRASYON NOKTASI) ------------------ #
+# ------------------ YAPAY ZEKA SOHBET ------------------ #
 with st.container():
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markmarkdown("### 🤖 Yapay Zeka Sağlık Asistanı (Demo)")
+    st.markdown("### 🤖 Yapay Zeka Sağlık Asistanı (Demo)")
 
-    st.write(
-        "Bu bölüm, arka planda **Gemini** veya benzeri bir büyük dil modeli ile entegre olacak şekilde "
-        "tasarlanmıştır. Şu an örnek bir kural tabanlı cevaplayıcı çalışıyor."
-    )
+    if "chat" not in st.session_state:
+        st.session_state.chat = []
 
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
+    user_msg = st.text_input("Şikayetini yaz (ör: başım ağrıyor)")
 
-    user_msg = st.text_input("Şikayetini veya sorununu yaz (ör: başım ağrıyor, ateşim var vb.)")
+    def triage(msg):
+        msg = msg.lower()
+        if "nefes" in msg or "göğüs" in msg:
+            return "Bu ciddi olabilir. Derhal 112’yi arayın."
+        if "ateş" in msg:
+            return "Ateş enfeksiyon belirtisi olabilir. Dinlen, sıvı al."
+        if "baş" in msg:
+            return "Baş ağrısı yaygındır. Işık-sesten uzak dur."
+        return "Durumunu anladım. Gerekirse bir doktora başvur."
 
-    def simple_triage_answer(text: str) -> str:
-        t = text.lower()
-        if any(k in t for k in ["göğüs", "nefes", "zor nefes", "kalp", "baygın"]):
-            return (
-                "Bu tarif, potansiyel olarak **hayati risk** içerebilir. "
-                "Derhal 112’yi araman veya en yakın acil servise başvurman gerekir."
-            )
-        if any(k in t for k in ["ateş", "üşüme", "titreme"]):
-            return (
-                "Ateş ve enfeksiyon bulguları olabilir. Bol sıvı al, dinlen; "
-                "durumun kötüleşirse aile hekimi veya acil servise başvur."
-            )
-        if any(k in t for k in ["başım ağrıyor", "baş ağrısı", "migren"]):
-            return (
-                "Baş ağrısı birçok nedene bağlı olabilir. Işık ve sesten uzak dur, "
-                "gerekirse basit ağrı kesici kullan; ani, çok şiddetli ve farklı bir ağrıysa acile git."
-            )
-        return (
-            "Şikayetini anladım. Bu uygulama tıbbi tanı koyamaz; "
-            "durumun seni endişelendiriyorsa bir hekime başvurman en doğrusudur."
-        )
-
-    if st.button("Asistanla Konuş (Demo)"):
+    if st.button("Asistanla Konuş"):
         if user_msg.strip():
-            ai_answer = simple_triage_answer(user_msg)
-            st.session_state.chat_history.append(("Kullanıcı", user_msg))
-            st.session_state.chat_history.append(("AIHEALTH", ai_answer))
-        else:
-            st.warning("Lütfen önce bir mesaj yaz.")
+            ai = triage(user_msg)
+            st.session_state.chat.append(("Sen", user_msg))
+            st.session_state.chat.append(("AIHEALTH", ai))
 
-    for sender, msg in st.session_state.chat_history:
-        if sender == "Kullanıcı":
-            st.markdown(f"<div class='chat-bubble-user'><strong>Sen:</strong> {msg}</div>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div class='chat-bubble-ai'><strong>AIHEALTH:</strong> {msg}</div>", unsafe_allow_html=True)
+    for sender, msg in st.session_state.chat:
+        bubble = "chat-bubble-user" if sender == "Sen" else "chat-bubble-ai"
+        st.markdown(f"<div class='{bubble}'><strong>{sender}:</strong> {msg}</div>", unsafe_allow_html=True)
 
-    st.info(
-        "Not: Buradaki mantık örnektir. Gerçek sistemde bu kısım Gemini API veya benzeri bir modele bağlanacaktır."
-    )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------ FOTOĞRAF ÇEKME / YARA ANALİZİ MOCK ------------------ #
+# ------------------ FOTOĞRAF ÇEKME ------------------ #
 with st.container():
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("### 📷 Yaralı Bölgenin Fotoğrafını Çek")
+    img = st.camera_input("Fotoğraf çek")
 
-    st.write(
-        "Yaralı veya hasar görmüş bölgenin fotoğrafını çekerek, ileride **Gemini Vision** gibi "
-        "görsel yapay zeka modellerine gönderilecek bir akış tasarlanmıştır."
-    )
-
-    img = st.camera_input("Yaralı bölgenin fotoğrafını çek")
-
-    def mock_vision_analysis(image_bytes: bytes) -> str:
-        # Buraya gerçek Gemini Vision entegrasyonu eklenecek.
-        return (
-            "Örnek analiz: Yüzeysel deri lezyonu benzeri bir görünüm tespit edildi. "
-            "Gerçek tanı için mutlaka hekim muayenesi gereklidir."
-        )
-
-    if img is not None:
-        bytes_data = img.getvalue()
-        with st.spinner("Görüntü analiz ediliyor... (Gemini Vision entegrasyon noktası)"):
-            result = mock_vision_analysis(bytes_data)
-        st.markdown("#### Yapay Zeka Analiz Sonucu")
-        st.write(result)
+    if img:
+        st.success("Fotoğraf alındı. Yapay zeka analizi burada çalışacak.")
+        st.write("Örnek analiz: Yüzeysel deri lezyonu benzeri bir görünüm tespit edildi.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------ KONUM TABANLI HASTANE & ECZANE ------------------ #
 with st.container():
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("### 📍 Konum Tabanlı Hastane ve Eczane Bul")
-
-    st.write(
-        "Cihaz konumunu kullanarak en yakın hastane ve eczaneleri harita üzerinde açmak için aşağıdaki "
-        "konum alma butonunu kullanın."
-    )
+    st.markdown("### 📍 En Yakın Hastane & Eczane")
 
     loc = geolocation()
 
     if loc:
         lat = loc["latitude"]
         lon = loc["longitude"]
-        st.success(f"Konum alındı: {lat:.5f}, {lon:.5f}")
+        st.success(f"Konum alındı: {lat}, {lon}")
 
-        now = datetime.now()
-        hour = now.hour
+        hospital = f"https://www.google.com/maps/search/hospital/@{lat},{lon},15z"
+        st.markdown(f"[🏥 En Yakın Hastaneler]({hospital})")
 
-        # Hastane
-        hospital_url = f"https://www.google.com/maps/search/hospital/@{lat},{lon},15z"
-        st.markdown(
-            f"<div class='map-block'><strong>En Yakın Hastaneler</strong><br/>"
-            f"<a href='{hospital_url}' target='_blank'>🧭 Haritada Hastaneleri Aç</a></div>",
-            unsafe_allow_html=True,
-        )
-
-        # Eczane / Nöbetçi eczane
-        if hour >= 19 or hour < 8:
-            eczane_title = "En Yakın Nöbetçi Eczaneler"
-            keyword = "n%C3%B6bet%C3%A7i+eczane"
-        else:
-            eczane_title = "En Yakın Eczaneler"
-            keyword = "eczane"
-
-        pharmacy_url = f"https://www.google.com/maps/search/{keyword}/@{lat},{lon},15z"
-
-        st.markdown(
-            f"<div class='map-block'><strong>{eczane_title}</strong><br/>"
-            f"<a href='{pharmacy_url}' target='_blank'>💊 Haritada Eczaneleri Aç</a><br/>"
-            f"<small style='opacity:0.8;'>Gerçek telefon ve adres bilgileri için harita üzerindeki "
-            f"eczane kartlarını kullanın.</small></div>",
-            unsafe_allow_html=True,
-        )
+        hour = datetime.now().hour
+        keyword = "nöbetçi eczane" if hour >= 19 else "eczane"
+        pharmacy = f"https://www.google.com/maps/search/{keyword}/@{lat},{lon},15z"
+        st.markdown(f"[💊 En Yakın Eczaneler]({pharmacy})")
     else:
-        st.warning("Konum alınamadı. Lütfen tarayıcıdan konum izni verin.")
+        st.warning("Konum alınamadı. Lütfen izin verin.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------ KAYIT OL BÖLÜMÜ ------------------ #
+# ------------------ KAYIT OL ------------------ #
 st.markdown('<div id="kayit-ol"></div>', unsafe_allow_html=True)
 with st.container():
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("### 📝 Kayıt Ol")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        ad = st.text_input("Ad Soyad")
-        tc = st.text_input("T.C. / Kimlik Numarası")
-        tel = st.text_input("Telefon Numarası")
-    with col2:
-        email = st.text_input("E-posta")
-        yas = st.number_input("Yaş", min_value=0, max_value=120, step=1)
-        kronik = st.text_area("Kronik Hastalık / Düzenli İlaç Bilgisi", height=80)
+    ad = st.text_input("Ad Soyad")
+    tel = st.text_input("Telefon")
+    email = st.text_input("E-posta")
 
-    if st.button("Kaydımı Tamamla", type="primary"):
+    if st.button("Kaydı Tamamla"):
         if ad and tel:
-            st.success(
-                "Kayıt talebiniz alındı. Bu demo sürümde veriler kalıcı olarak saklanmamaktadır; "
-                "gerçek sistemde güvenli sunucu altyapısı ile işlenecektir."
-            )
+            st.success("Kayıt alındı. Teşekkürler.")
         else:
-            st.warning("Lütfen en az Ad Soyad ve Telefon alanlarını doldurun.")
+            st.warning("Ad ve telefon zorunludur.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------ HUKUKİ UYARI ------------------ #
 st.markdown(
     """
     <div class="warning-footer">
-      <strong>Hukuki Uyarı:</strong> AIHEALTH, yapay zeka destekli bir sağlık asistanı prototipidir. 
-      Acil durumlarda <strong>112 Acil Çağrı Merkezi</strong> ve en yakın sağlık kuruluşunun yerini <u>kesinlikle tutmaz</u>. 
-      Buradaki tüm bilgiler yalnızca bilgilendirme amaçlıdır; tıbbi tanı ve tedavi için mutlaka hekim değerlendirmesi gereklidir.
+      <strong>Hukuki Uyarı:</strong> AIHEALTH bir sağlık profesyoneli değildir. 
+      Acil durumlarda 112’yi arayın. Tüm bilgiler bilgilendirme amaçlıdır.
     </div>
     """,
     unsafe_allow_html=True,
